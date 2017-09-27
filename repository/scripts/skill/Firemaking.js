@@ -29,8 +29,6 @@ var GroundItem = Java.type('org.virtue.game.world.region.GroundItem');
  * @since 19/11/2014
  */
 
-var FIREMAKING_SKILL = 11;
-
 var Log = {
 	NORMAL : {
 		itemID : 1511,
@@ -191,7 +189,7 @@ var listen = function(scriptManager) {
 var Firemaking = {
 		openToolDialog : function (player, item, slot) {
 			var tools = [590, 946, 24291];
-			if (item.getID() == Log.EUCALYPTUS.itemID) {
+			if (api.getId(item) == Log.EUCALYPTUS.itemID) {
 				tools = [590, 24291];
 			}
 			requestTool(player, "What do you want to use on the logs?", tools, function (toolId) {
@@ -200,11 +198,11 @@ var Firemaking = {
 					Firemaking.runFiremakingAction(player, item, slot);
 					break;
 				case 946://Craft
-					showFletchingDialog(player, item, [slot])
+					Fletching.handleCraft(player, api.getId(item), slot);
 					//item.handleItemOnItem(player, slot, Item.create(946, 1), -1);//A hacky solution, but it should work
 					break;
 				case 24291://Add logs to a nearby bonfire
-					Firemaking.findBonfire(player, item.getId(), slot);
+					Firemaking.findBonfire(player, api.getId(item), slot);
 					break;
 				default:
 					api.sendMessage(player, "Unhandled log tool: logs="+item+", toolID="+toolId);
@@ -251,7 +249,7 @@ var Firemaking = {
 				api.sendMessage(player, "You need a tinderbox to light these logs.");
 				return;
 			}
-			var delay = this.getDelay(player, log);//Calculates the time taken to light this log
+			var delay = 4;//Calculates the time taken to light this log
 			var region = api.getRegion(api.getCoords(player));
 			if (region != null) {
 				if (!this.tileEmpty(api.getCoords(player), region)) {
@@ -266,8 +264,13 @@ var Firemaking = {
 					process : function (player) {
 						api.runAnimation(player, 16700);
 						if (delay <= 0) {
-							Firemaking.firemakingSuccess(player, log);
-							return true;
+						    if(Math.random() < Firemaking.getFireSuccessRate(player)){
+							    Firemaking.firemakingSuccess(player, log);
+							    return true;
+							}else{
+							    delay = 4;
+							    return false;
+							}
 						}
 						if (!Firemaking.tileEmpty(player.getCurrentTile(), region) || !item.exists()) {
 							return true;//Could not complete as tile is in use
@@ -370,8 +373,10 @@ var Firemaking = {
 			}
 			return null;
 		},
-		getDelay : function (player, log) {
-			return 10;//TODO: Figure out the correct calculation for this
+		getFireSuccessRate : function (player) {
+		    //A veteran player came up with this for me based on his experience. It starts to succeed always at first try
+		    //at level 41. Apparently it's the same regardless of the logs level requirement.
+        	return (0.02*(api.getStatLevel(player,Stat.FIREMAKING)-1)+0.2);
 		}
 }
 

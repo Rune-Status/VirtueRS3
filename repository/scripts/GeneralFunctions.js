@@ -32,6 +32,8 @@
 
 var INTEGER_MAX = 2147483647;
 
+var COINS = 995;
+
 function runAnimation (entity, animId, callback) {
 	if (callback == undefined) {
 		return api.runAnimation(entity, animId);
@@ -42,6 +44,36 @@ function runAnimation (entity, animId, callback) {
 			}
 		});	
 		return api.runAnimation(entity, animId, new Handler());
+	}
+}
+
+/**
+ * Runs a function after a delay. This delay is attached to the entity and is interrupted if the entity is stopped
+ * @param entity The entity to link the task to
+ * @param cycles The number of server cycles before the task is run
+ * @param callback The function to run when the specified number of cycles passes
+ * @param interruptable True if the task can be interrupted before it's run (such as if the player moves). Defaults to true if not specified
+ * @param onInterrupt The function to run if the task is interrupted
+ */
+function delayFunction (entity, cycles, callback, interruptable, onInterrupt) {
+	var Handler = Java.extend(Java.type('java.lang.Runnable'), {
+		run : function () {
+			callback();
+		}
+	});	
+	if (interruptable === undefined) {
+		api.delay(entity, new Handler(), cycles);
+	} else {
+		var handler = null;
+		if (onInterrupt !== undefined) {
+			var InterruptHandler = Java.extend(Java.type('java.lang.Runnable'), {
+				run : function () {
+					onInterrupt();
+				}
+			});
+			handler = new InterruptHandler();
+		}		
+		api.delay(entity, new Handler(), cycles, interruptable, handler);
 	}
 }
 
@@ -278,6 +310,24 @@ function chatnpc (player, npc, message, callback) {
 	api.setInputHandler(player, new Handler());
 }
 
+function chatobj (player, obj, message, callback) {
+	var Handler = Java.extend(Java.type('org.virtue.game.content.dialogues.InputEnteredHandler'), {
+		handle : function (value) {
+			if (callback !== undefined) {
+				callback();
+			}			
+		}
+	});
+	if (typeof(npc) !== "number") {
+		obj = api.getId(obj);
+	}
+	api.setWidgetText(player, 1184, 11, configApi.objName(obj));
+	api.setWidgetObject(player, 1184, 2, obj, 1);
+	api.setWidgetText(player, 1184, 9, message);	
+	api.openOverlaySub(player, 1006, 1184, false);
+	api.setInputHandler(player, new Handler());
+}
+
 function multi2 (player, message, op1, op1callback, op2, op2callback) {
 	var Handler = Java.extend(Java.type('org.virtue.game.content.dialogues.InputEnteredHandler'), {
 		handle : function (value) {
@@ -372,6 +422,16 @@ function setBit (value, bit) {
 
 function unsetBit (value, bit) {
 	return value & -1 - (1 << bit);
+}
+
+/**
+ * Checks whether the addedValue would cause a Java integer overflow if added to currentValue
+ * @param currentValue The currently held value
+ * @param addedValue The value to add
+ * @returns True if an overflow would occur, false otherwise
+ */
+function checkOverflow (currentValue, addedValue) {
+	return (INTEGER_MAX-currentValue)<addedValue;
 }
 
 function addBonusExperience (player, skill, xpToAdd) {

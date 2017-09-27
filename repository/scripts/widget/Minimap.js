@@ -45,14 +45,11 @@ var MinimapListener = Java.extend(Java.type('org.virtue.engine.script.listeners.
 				api.openCentralWidget(player, 206, false);
 				return;
 			case 3://Examine money pouch
-				var coins = api.getItem(player, Inv.MONEY_POUCH, 0);
-				if (coins != null) {
-					var count = api.getFormattedNumber(coins.getAmount());
-					api.sendMessage(player, "Your money pouch contains " + count +" coins.");
-				}
+				var count = api.itemTotal(player, Inv.MONEY_POUCH, COINS);
+				api.sendMessage(player, "Your money pouch contains "+api.getFormattedNumber(count) +" coins.");
 				return;
 			case 4://Withdraw money pouch
-				player.getMoneyPouch().removeMoneyPouchCoins();
+				MoneyPouch.requestWithdrawCoins(player);
 				return;
 			case 6://Bond pouch
 				return;//This is client-sided
@@ -60,7 +57,7 @@ var MinimapListener = Java.extend(Java.type('org.virtue.engine.script.listeners.
 				//player.getWidgets().openWidget(1477, 380, 566, false);
 				
 			default:
-				api.sendMessage(player, "Unhandled coin pouch button: button="+args.button);
+				api.sendMessage(player, "Unhandled money pouch button: button="+args.button);
 				return;
 			}			
 		case 44://World map
@@ -77,8 +74,8 @@ var MinimapListener = Java.extend(Java.type('org.virtue.engine.script.listeners.
 			api.hideWidget(player, 1477, 388, true);
 			api.setVarp(player, 622, api.getCoordHash(api.getCoords(player)));
 			api.setVarp(player, 674, api.getCoordHash(api.getCoords(player)));
-			api.openWidget(player, 1477, 15, 1421, true);
-			api.openWidget(player, 1477, 16, 1422, false);
+			api.openWidget(player, 1477, 16, 1421, true);
+			api.openWidget(player, 1477, 15, 1422, false);
 			api.openWidget(player, 1422, 107, 698, true);
 			/*player.getDispatcher().sendWidgetSettings(1422, 38, 2, 2, 2);
 			player.getDispatcher().sendWidgetSettings(1422, 39, 2, 2, 2);
